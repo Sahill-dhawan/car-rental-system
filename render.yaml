@@ -3,7 +3,7 @@ services:
   - type: web
     name: car-rental-backend
     env: node
-    buildCommand: npm install
+    buildCommand: npm install && cd backend && npm install && cd .. && npm run build
     startCommand: node backend/server.js
     envVars:
       - key: NODE_ENV
