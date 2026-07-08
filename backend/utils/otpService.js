@@ -129,6 +129,27 @@ exports.sendOTP = async (email, otp) => {
 };
 
 /**
+ * Send OTP via SMS (Mocked for placement interviews)
+ */
+exports.sendPhoneOTP = async (phone, otp) => {
+  console.log('='.repeat(60));
+  console.log('📱 MOCK SMS OTP SENT');
+  console.log('='.repeat(60));
+  console.log(`To Phone: ${phone}`);
+  console.log(`OTP Code: ${otp}`);
+  console.log(`Valid for: 5 minutes`);
+  console.log('='.repeat(60));
+  console.log('Note: This is a mocked SMS service for interview purposes.');
+  console.log('In production, this would be sent via Twilio or AWS SNS.');
+  console.log('='.repeat(60));
+
+  return {
+    success: true,
+    message: 'OTP sent successfully to your phone',
+  };
+};
+
+/**
  * Verify OTP
  */
 exports.verifyOTP = (storedOTP, providedOTP, otpExpiry) => {

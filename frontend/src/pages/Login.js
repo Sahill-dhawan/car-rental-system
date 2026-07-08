@@ -5,8 +5,8 @@ import { setUser, setLoading, setError } from '../redux/slices/authSlice';
 import api from '../utils/api';
 
 const Login = () => {
-  const [loginMethod, setLoginMethod] = useState('password'); // 'password' or 'otp'
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [loginMethod, setLoginMethod] = useState('password'); // 'password', 'email_otp', or 'phone_otp'
+  const [formData, setFormData] = useState({ email: '', password: '', phone: '' });
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [error, setErrorMessage] = useState('');
@@ -91,6 +91,53 @@ const Login = () => {
     }
   };
 
+  const handleRequestPhoneOTP = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setErrorMessage('');
+
+    try {
+      const response = await api.post('/auth/request-phone-otp', { 
+        phone: formData.phone
+      });
+      setOtpSent(true);
+      alert(response.data.message);
+    } catch (err) {
+      const message = err.response?.data?.message || 'Failed to send Phone OTP';
+      setErrorMessage(message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyPhoneOTP = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setErrorMessage('');
+
+    try {
+      dispatch(setLoading(true));
+      const response = await api.post('/auth/verify-phone-otp', { 
+        phone: formData.phone,
+        otp 
+      });
+      dispatch(setUser(response.data));
+      
+      if (response.data.user.role === 'admin') {
+        navigate('/admin/cars');
+      } else {
+        navigate('/');
+      }
+    } catch (err) {
+      const message = err.response?.data?.message || 'Phone OTP verification failed';
+      setErrorMessage(message);
+      dispatch(setError(message));
+    } finally {
+      setIsLoading(false);
+      dispatch(setLoading(false));
+    }
+  };
+
   return (
     <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
       <div style={{ maxWidth: '450px', width: '100%', background: 'white', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
@@ -122,22 +169,44 @@ const Login = () => {
           <button
             type="button"
             onClick={() => {
-              setLoginMethod('otp');
+              setLoginMethod('email_otp');
               setErrorMessage('');
+              setOtpSent(false);
             }}
             style={{
               flex: 1,
               padding: '0.75rem',
               border: 'none',
               borderRadius: '4px',
-              background: loginMethod === 'otp' ? '#000' : 'transparent',
-              color: loginMethod === 'otp' ? 'white' : '#666',
+              background: loginMethod === 'email_otp' ? '#000' : 'transparent',
+              color: loginMethod === 'email_otp' ? 'white' : '#666',
               cursor: 'pointer',
               fontWeight: '500',
               transition: 'all 0.2s'
             }}
           >
-            OTP
+            Email OTP
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setLoginMethod('phone_otp');
+              setErrorMessage('');
+              setOtpSent(false);
+            }}
+            style={{
+              flex: 1,
+              padding: '0.75rem',
+              border: 'none',
+              borderRadius: '4px',
+              background: loginMethod === 'phone_otp' ? '#000' : 'transparent',
+              color: loginMethod === 'phone_otp' ? 'white' : '#666',
+              cursor: 'pointer',
+              fontWeight: '500',
+              transition: 'all 0.2s'
+            }}
+          >
+            Phone OTP
           </button>
         </div>
         
@@ -192,7 +261,7 @@ const Login = () => {
               {isLoading ? 'Logging in...' : 'Login'}
             </button>
           </form>
-        ) : (
+        ) : loginMethod === 'email_otp' ? (
           !otpSent ? (
             <form onSubmit={handleRequestOTP}>
               <div style={{ marginBottom: '1.5rem' }}>
@@ -297,6 +366,114 @@ const Login = () => {
                 }}
               >
                 ← Back to Email Entry
+              </button>
+            </form>
+          )
+        ) : (
+          !otpSent ? (
+            <form onSubmit={handleRequestPhoneOTP}>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', color: '#333' }}>Phone Number</label>
+                <input
+                  type="text"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  required
+                  placeholder="Enter your registered phone number"
+                  style={{ width: '100%', padding: '0.75rem', border: '1px solid #ddd', borderRadius: '4px' }}
+                />
+                <small style={{ color: '#666', fontSize: '0.85rem', display: 'block', marginTop: '0.5rem' }}>
+                  📱 SMS OTP will be sent to this number
+                </small>
+              </div>
+              
+              <button
+                type="submit"
+                disabled={isLoading}
+                style={{
+                  width: '100%',
+                  background: '#000',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.75rem',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  fontWeight: '500',
+                  opacity: isLoading ? 0.7 : 1
+                }}
+              >
+                {isLoading ? 'Sending OTP...' : 'Send OTP to Phone'}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyPhoneOTP}>
+              <div style={{ marginBottom: '1rem', padding: '1rem', background: '#e7f3ff', borderRadius: '4px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '1.2rem' }}>📱</span>
+                <span>OTP sent to <strong>{formData.phone}</strong>. Check your messages!</span>
+              </div>
+              
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', color: '#333' }}>Enter OTP</label>
+                <input
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  required
+                  maxLength="6"
+                  placeholder="6-digit code"
+                  style={{ 
+                    width: '100%', 
+                    padding: '1rem', 
+                    border: '2px solid #000', 
+                    borderRadius: '4px', 
+                    fontSize: '1.5rem', 
+                    letterSpacing: '0.5rem', 
+                    textAlign: 'center',
+                    fontWeight: '600'
+                  }}
+                />
+              </div>
+              
+              <button
+                type="submit"
+                disabled={isLoading}
+                style={{
+                  width: '100%',
+                  background: '#000',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.75rem',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  fontWeight: '500',
+                  marginBottom: '0.5rem',
+                  opacity: isLoading ? 0.7 : 1
+                }}
+              >
+                {isLoading ? 'Verifying...' : 'Verify & Login'}
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  setOtpSent(false);
+                  setOtp('');
+                }}
+                style={{
+                  width: '100%',
+                  background: 'transparent',
+                  color: '#666',
+                  border: '1px solid #ddd',
+                  padding: '0.6rem',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem'
+                }}
+              >
+                ← Back to Phone Entry
               </button>
             </form>
           )

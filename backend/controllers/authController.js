@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
-const { generateOTP, sendOTP, verifyOTP } = require('../utils/otpService');
+const { generateOTP, sendOTP, sendPhoneOTP, verifyOTP } = require('../utils/otpService');
 
 
 const generateToken = (id) => {
@@ -217,6 +217,124 @@ exports.verifyOTPLogin = async (req, res, next) => {
     });
   } catch (error) {
     console.error('Verify OTP error:', error);
+    next(error);
+  }
+};
+
+/**
+ * @desc    Request OTP for phone-based login
+ * @route   POST /api/auth/request-phone-otp
+ * @access  Public
+ */
+exports.requestPhoneOTP = async (req, res, next) => {
+  try {
+    const { phone } = req.body;
+
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide phone number',
+      });
+    }
+
+    // Find user by phone
+    const user = await User.findOne({ phone });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No account found with this phone number',
+      });
+    }
+
+    // Generate OTP
+    const otp = generateOTP();
+    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    // Save OTP to user
+    user.otp = otp;
+    user.otpExpiry = otpExpiry;
+    await user.save();
+
+    // Send OTP via phone
+    const smsResult = await sendPhoneOTP(user.phone, otp);
+
+    if (!smsResult.success) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send SMS OTP. Please try again.',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'OTP sent successfully to your phone',
+      expiresIn: '5 minutes',
+    });
+  } catch (error) {
+    console.error('Request Phone OTP error:', error);
+    next(error);
+  }
+};
+
+/**
+ * @desc    Verify Phone OTP and login
+ * @route   POST /api/auth/verify-phone-otp
+ * @access  Public
+ */
+exports.verifyPhoneOTPLogin = async (req, res, next) => {
+  try {
+    const { phone, otp } = req.body;
+
+    if (!phone || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide phone number and OTP',
+      });
+    }
+
+    // Find user with OTP fields
+    const user = await User.findOne({ phone }).select('+otp +otpExpiry');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Verify OTP
+    const otpVerification = verifyOTP(user.otp, otp, user.otpExpiry);
+
+    if (!otpVerification.success) {
+      return res.status(400).json({
+        success: false,
+        message: otpVerification.message,
+      });
+    }
+
+    // Clear OTP after successful verification
+    user.otp = undefined;
+    user.otpExpiry = undefined;
+    await user.save();
+
+    // Generate token
+    const token = generateToken(user._id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error('Verify Phone OTP error:', error);
     next(error);
   }
 };
