@@ -45,8 +45,6 @@ const ManageCars = () => {
     } catch (error) {
       toast.error('Failed to update availability');
     }
-      alert('Failed to update availability');
-    }
   };
 
   if (loading) return <div className="loading"><div className="spinner"></div></div>;
