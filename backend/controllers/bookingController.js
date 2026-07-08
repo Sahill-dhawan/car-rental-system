@@ -380,3 +380,71 @@ exports.deleteBooking = async (req, res, next) => {
     next(error);
   }
 };
+
+exports.downloadInvoice = async (req, res, next) => {
+  try {
+    const PDFDocument = require('pdfkit');
+    const booking = await Booking.findById(req.params.id)
+      .populate('user', 'name email phone')
+      .populate('car', 'name model brand rentPerDay');
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (booking.user._id.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    if (booking.paymentStatus !== 'paid') {
+      return res.status(400).json({ success: false, message: 'Cannot generate invoice for unpaid booking' });
+    }
+
+    const doc = new PDFDocument({ margin: 50 });
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=invoice-${booking._id}.pdf`);
+    
+    doc.pipe(res);
+    
+    // Header
+    doc.fontSize(20).font('Helvetica-Bold').text('CAR RENTAL INVOICE', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(10).font('Helvetica').text(`Invoice ID: ${booking._id}`);
+    doc.text(`Date: ${new Date().toLocaleDateString()}`);
+    doc.moveDown(2);
+
+    // Customer Details
+    doc.fontSize(14).font('Helvetica-Bold').text('Customer Details');
+    doc.fontSize(10).font('Helvetica');
+    doc.text(`Name: ${booking.user.name}`);
+    doc.text(`Email: ${booking.user.email}`);
+    doc.text(`Phone: ${booking.user.phone || 'N/A'}`);
+    doc.moveDown(2);
+
+    // Booking Details
+    doc.fontSize(14).font('Helvetica-Bold').text('Booking Details');
+    doc.fontSize(10).font('Helvetica');
+    doc.text(`Car: ${booking.car.brand} ${booking.car.model} (${booking.car.name})`);
+    doc.text(`Pickup Date: ${new Date(booking.startDate).toLocaleDateString()}`);
+    doc.text(`Drop-off Date: ${new Date(booking.endDate).toLocaleDateString()}`);
+    doc.text(`Total Days: ${booking.totalDays}`);
+    doc.text(`Rate per Day: Rs. ${booking.car.rentPerDay}`);
+    doc.moveDown(2);
+
+    // Payment Summary
+    doc.fontSize(14).font('Helvetica-Bold').text('Payment Summary');
+    doc.fontSize(12).font('Helvetica');
+    doc.text(`Total Amount Paid: Rs. ${booking.totalAmount}`);
+    doc.text(`Payment ID: ${booking.razorpayPaymentId || 'N/A'}`);
+    doc.text(`Status: PAID`, { stroke: true, color: 'green' });
+    
+    doc.moveDown(4);
+    doc.fontSize(10).font('Helvetica-Oblique').text('Thank you for choosing our Car Rental Service!', { align: 'center' });
+
+    doc.end();
+
+  } catch (error) {
+    next(error);
+  }
+};

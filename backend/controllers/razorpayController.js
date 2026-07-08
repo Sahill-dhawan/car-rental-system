@@ -2,6 +2,7 @@ const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const Booking = require('../models/Booking');
 const { sendBookingConfirmationEmail } = require('../utils/emailService');
+const socket = require('../utils/socket');
 
 // Initialize Razorpay instance
 const razorpay = new Razorpay({
@@ -206,6 +207,19 @@ exports.verifyRazorpayPayment = async (req, res, next) => {
     booking.status = 'confirmed';
     booking.paidAt = Date.now();
     await booking.save();
+    
+    // Emit real-time notification to admin dashboard
+    try {
+      const io = socket.getIO();
+      io.emit('new_booking', {
+        message: 'A new booking has just been confirmed!',
+        bookingId: booking._id,
+        carName: booking.car?.name,
+        amount: booking.totalAmount
+      });
+    } catch (err) {
+      console.error('Socket.io emit error:', err);
+    }
 
     // Send confirmation email asynchronously (don't block response)
     if (!booking.confirmationEmailSent) {

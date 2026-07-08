@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
+const http = require('http');
 
 // Load environment variables
 dotenv.config();
@@ -60,6 +61,12 @@ app.use((err, req, res, next) => {
 
 // Start server
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, '0.0.0.0', () => {
+const server = http.createServer(app);
+
+// Initialize Socket.io
+const socket = require('./utils/socket');
+socket.init(server);
+
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });

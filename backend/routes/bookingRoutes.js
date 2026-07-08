@@ -10,6 +10,7 @@ const {
   deleteBooking,
   verifyPayment,
   confirmPayment,
+  downloadInvoice,
 } = require('../controllers/bookingController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -17,6 +18,7 @@ router.post('/', protect, createBooking);
 router.get('/my-bookings', protect, getMyBookings);
 router.get('/all', protect, authorize('admin'), getAllBookings);
 router.get('/:id', protect, getBooking);
+router.get('/:id/invoice', protect, downloadInvoice);
 router.post('/:id/verify-payment', protect, verifyPayment);
 router.put('/:id/confirm-payment', protect, confirmPayment);
 router.put('/:id/status', protect, authorize('admin'), updateBookingStatus);

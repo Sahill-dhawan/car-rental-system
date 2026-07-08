@@ -23,6 +23,22 @@ const UserDashboard = () => {
     }
   };
 
+  const handleDownloadInvoice = async (id) => {
+    try {
+      const response = await api.get(`/bookings/${id}/invoice`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `invoice-${id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+      alert('Failed to download invoice');
+    }
+  };
+
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -71,7 +87,7 @@ const UserDashboard = () => {
                   <div><strong>Pickup:</strong> {booking.pickupLocation}</div>
                   <div><strong>Dropoff:</strong> {booking.dropoffLocation}</div>
                 </div>
-                <div style={{ display: 'flex', gap: '1rem' }}>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                   <span style={{
                     padding: '0.25rem 0.75rem',
                     borderRadius: '12px',
@@ -90,6 +106,23 @@ const UserDashboard = () => {
                   }}>
                     Payment: {booking.paymentStatus}
                   </span>
+                  
+                  {booking.paymentStatus === 'paid' && (
+                    <button
+                      onClick={() => handleDownloadInvoice(booking._id)}
+                      style={{
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '4px',
+                        background: '#000',
+                        color: 'white',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '0.85rem'
+                      }}
+                    >
+                      Download Invoice
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

@@ -4,6 +4,7 @@ import api from '../utils/api';
 import CarForm from './CarForm';
 import toast from 'react-hot-toast';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { io } from 'socket.io-client';
 
 const ManageCars = () => {
   const [cars, setCars] = useState([]);
@@ -440,6 +441,28 @@ const DashboardOverview = () => {
 
   useEffect(() => {
     fetchStats();
+    
+    // Initialize Socket.io connection for real-time booking notifications
+    const socket = io(process.env.REACT_APP_API_URL || 'http://localhost:5001', {
+      withCredentials: true
+    });
+    
+    socket.on('new_booking', (data) => {
+      toast.success(
+        <div>
+          <strong>🔔 New Booking Confirmed!</strong><br/>
+          {data.carName} - ₹{data.amount}<br/>
+          <small style={{ opacity: 0.8 }}>Just now</small>
+        </div>,
+        { duration: 5000 }
+      );
+      // Refresh stats to show new booking
+      fetchStats();
+    });
+    
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   const fetchStats = async () => {
