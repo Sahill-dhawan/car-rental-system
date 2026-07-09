@@ -12,6 +12,7 @@ import CarDetails from './pages/CarDetails';
 import Booking from './pages/Booking';
 import UserDashboard from './pages/UserDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import { Toaster } from 'react-hot-toast';
 import './App.css';
 
 function App() {
@@ -19,9 +20,17 @@ function App() {
     <Provider store={store}>
       <Router>
         <div className="App">
+          <Toaster position="top-center" />
           <Navbar />
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route
+              path="/"
+              element={
+                <PrivateRoute>
+                  <Home />
+                </PrivateRoute>
+              }
+            />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/cars/:id" element={<CarDetails />} />
