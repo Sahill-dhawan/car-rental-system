@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { addBooking } from '../redux/slices/bookingSlice';
 import api from '../utils/api';
+import toast from 'react-hot-toast';
 
 const Booking = () => {
   const { id } = useParams();
@@ -104,7 +105,7 @@ const Booking = () => {
             });
 
             dispatch(addBooking(verifyResponse.data.booking));
-            alert('🎉 Payment successful! Booking confirmed. Check your email for confirmation.');
+            toast.success('🎉 Payment successful! Booking confirmed. Check your email for confirmation.');
             navigate('/dashboard');
           } catch (err) {
             setError(err.response?.data?.message || 'Payment verification failed');

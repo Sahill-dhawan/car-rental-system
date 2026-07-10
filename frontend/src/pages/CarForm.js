@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+import toast from 'react-hot-toast';
 
 const CarForm = ({ isEdit = false }) => {
   const { id } = useParams();
@@ -101,14 +102,14 @@ const CarForm = ({ isEdit = false }) => {
             'Content-Type': 'multipart/form-data',
           },
         });
-        alert('Car updated successfully!');
+        toast.success('Car updated successfully!');
       } else {
         await api.post('/cars', submitData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
-        alert('Car added successfully!');
+        toast.success('Car added successfully!');
       }
       
       navigate('/admin/cars');
