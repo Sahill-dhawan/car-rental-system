@@ -41,7 +41,7 @@ const CarDetails = () => {
     <div className="container" style={{ padding: '2rem' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto', background: 'white', borderRadius: '8px', padding: '2rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
         <img
-          src={currentCar.images?.[0] ? `http://localhost:5001${currentCar.images[0]}` : 'https://via.placeholder.com/800x400'}
+          src={currentCar.images?.[0] ? (currentCar.images[0].startsWith('http') ? currentCar.images[0] : `http://localhost:5001${currentCar.images[0]}`) : 'https://via.placeholder.com/800x400'}
           alt={currentCar.name}
           style={{ width: '100%', height: '400px', objectFit: 'cover', borderRadius: '8px', marginBottom: '2rem' }}
         />

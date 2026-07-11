@@ -56,7 +56,7 @@ const UserDashboard = () => {
               gap: '1.5rem'
             }}>
               <img
-                src={booking.car?.images?.[0] ? `http://localhost:5001${booking.car.images[0]}` : 'https://via.placeholder.com/200x150'}
+                src={booking.car?.images?.[0] ? (booking.car.images[0].startsWith('http') ? booking.car.images[0] : `http://localhost:5001${booking.car.images[0]}`) : 'https://via.placeholder.com/200x150'}
                 alt={booking.car?.name}
                 style={{ width: '200px', height: '150px', objectFit: 'cover', borderRadius: '4px' }}
               />
