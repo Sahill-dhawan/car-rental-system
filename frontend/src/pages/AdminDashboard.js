@@ -443,7 +443,8 @@ const DashboardOverview = () => {
     fetchStats();
     
     // Initialize Socket.io connection for real-time booking notifications
-    const socket = io(process.env.REACT_APP_API_URL || 'http://localhost:5001', {
+    const socketUrl = process.env.NODE_ENV === 'production' ? window.location.origin : 'http://localhost:5001';
+    const socket = io(socketUrl, {
       withCredentials: true
     });
     
