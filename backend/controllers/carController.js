@@ -3,11 +3,12 @@ const Booking = require('../models/Booking');
 
 exports.getCars = async (req, res, next) => {
   try {
-    const { type, brand, minPrice, maxPrice, seats, search } = req.query;
+    const { type, brand, minPrice, maxPrice, seats, search, transmission } = req.query;
     let query = {};
 
-    if (type) query.type = type;
-    if (brand) query.brand = brand;
+    if (type) query.type = { $regex: new RegExp(`^${type}$`, 'i') };
+    if (brand) query.brand = { $regex: new RegExp(`^${brand}$`, 'i') };
+    if (transmission) query.transmission = { $regex: new RegExp(`^${transmission}$`, 'i') };
     if (seats) query.seats = parseInt(seats);
     if (minPrice || maxPrice) {
       query.rentPerDay = {};
