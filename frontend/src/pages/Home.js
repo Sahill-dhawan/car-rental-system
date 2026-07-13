@@ -7,7 +7,7 @@ import api from '../utils/api';
 const Home = () => {
   const [cars, setCarsState] = useState([]);
   const [loading, setLoadingState] = useState(false);
-  const [filters, setFilters] = useState({ search: '', type: '', brand: '' });
+  const [filters, setFilters] = useState({ search: '', type: '', brand: '', transmission: '', minPrice: '', maxPrice: '' });
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -60,6 +60,31 @@ const Home = () => {
             <option value="Hatchback">Hatchback</option>
             <option value="Coupe">Coupe</option>
           </select>
+          <select
+            value={filters.transmission}
+            onChange={(e) => setFilters({ ...filters, transmission: e.target.value })}
+            style={{ padding: '0.75rem', border: '1px solid #ddd', borderRadius: '4px' }}
+          >
+            <option value="">All Transmissions</option>
+            <option value="Automatic">Automatic</option>
+            <option value="Manual">Manual</option>
+          </select>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <input
+              type="number"
+              placeholder="Min Price"
+              value={filters.minPrice}
+              onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
+              style={{ padding: '0.75rem', border: '1px solid #ddd', borderRadius: '4px', width: '50%' }}
+            />
+            <input
+              type="number"
+              placeholder="Max Price"
+              value={filters.maxPrice}
+              onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
+              style={{ padding: '0.75rem', border: '1px solid #ddd', borderRadius: '4px', width: '50%' }}
+            />
+          </div>
           <button onClick={handleSearch} style={{
             background: '#000',
             color: 'white',
@@ -90,7 +115,7 @@ const Home = () => {
             onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
             >
               <img
-                src={car.images?.[0] ? `http://localhost:5001${car.images[0]}` : 'https://via.placeholder.com/300x200?text=No+Image'}
+                src={car.images?.[0] ? (car.images[0].startsWith('http') ? car.images[0] : `http://localhost:5001${car.images[0]}`) : 'https://via.placeholder.com/300x200?text=No+Image'}
                 alt={car.name}
                 style={{ width: '100%', height: '200px', objectFit: 'cover' }}
               />
