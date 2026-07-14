@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Link, Routes, Route } from 'react-router-dom';
 import api from '../utils/api';
 import CarForm from './CarForm';
+import toast from 'react-hot-toast';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const ManageCars = () => {
   const [cars, setCars] = useState([]);
@@ -27,10 +29,10 @@ const ManageCars = () => {
     if (window.confirm('Are you sure you want to delete this car?')) {
       try {
         await api.delete(`/cars/${id}`);
-        alert('Car deleted successfully');
+        toast.success('Car deleted successfully');
         fetchCars();
       } catch (error) {
-        alert('Failed to delete car');
+        toast.error('Failed to delete car');
       }
     }
   };
@@ -38,9 +40,11 @@ const ManageCars = () => {
   const toggleAvailability = async (id, currentStatus) => {
     try {
       await api.patch(`/cars/${id}`, { availability: !currentStatus });
-      alert('Availability updated');
+      toast.success('Availability updated');
       fetchCars();
     } catch (error) {
+      toast.error('Failed to update availability');
+    }
       alert('Failed to update availability');
     }
   };
@@ -74,7 +78,7 @@ const ManageCars = () => {
           }}>
             <div style={{ position: 'relative', height: '220px', overflow: 'hidden' }}>
               <img
-                src={car.images?.[0] ? `http://localhost:5001${car.images[0]}` : 'https://via.placeholder.com/400x220'}
+                src={car.images?.[0] ? (car.images[0].startsWith('http') ? car.images[0] : `http://localhost:5001${car.images[0]}`) : 'https://via.placeholder.com/400x220'}
                 alt={car.name}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
@@ -186,10 +190,10 @@ const ManageBookings = () => {
   const updateBookingStatus = async (bookingId, status) => {
     try {
       await api.patch(`/admin/bookings/${bookingId}`, { status });
-      alert('Booking status updated successfully');
+      toast.success('Booking status updated successfully');
       fetchAllBookings();
     } catch (error) {
-      alert('Failed to update booking status');
+      toast.error('Failed to update booking status');
     }
   };
 
@@ -197,10 +201,10 @@ const ManageBookings = () => {
     if (window.confirm('Are you sure you want to delete this booking?')) {
       try {
         await api.delete(`/admin/bookings/${bookingId}`);
-        alert('Booking deleted successfully');
+        toast.success('Booking deleted successfully');
         fetchAllBookings();
       } catch (error) {
-        alert('Failed to delete booking');
+        toast.error('Failed to delete booking');
       }
     }
   };
@@ -353,10 +357,10 @@ const ManageUsers = () => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
         await api.delete(`/admin/users/${userId}`);
-        alert('User deleted successfully');
+        toast.success('User deleted successfully');
         fetchAllUsers();
       } catch (error) {
-        alert('Failed to delete user');
+        toast.error('Failed to delete user');
       }
     }
   };
@@ -432,6 +436,82 @@ const ManageUsers = () => {
   );
 };
 
+const DashboardOverview = () => {
+  const [stats, setStats] = useState({ totalCars: 0, totalBookings: 0, revenue: 0, users: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      const [carsRes, bookingsRes, usersRes] = await Promise.all([
+        api.get('/cars'),
+        api.get('/admin/bookings'),
+        api.get('/admin/users')
+      ]);
+      
+      const bookings = bookingsRes.data.bookings || [];
+      const revenue = bookings
+        .filter(b => b.paymentStatus === 'paid')
+        .reduce((sum, b) => sum + b.totalAmount, 0);
+
+      setStats({
+        totalCars: carsRes.data.count || 0,
+        totalBookings: bookings.length,
+        revenue,
+        users: usersRes.data.users?.length || 0,
+      });
+      setLoading(false);
+    } catch (error) {
+      console.error('Failed to fetch stats', error);
+      setLoading(false);
+    }
+  };
+
+  const chartData = [
+    { name: 'Cars', count: stats.totalCars },
+    { name: 'Bookings', count: stats.totalBookings },
+    { name: 'Users', count: stats.users }
+  ];
+
+  if (loading) return <div className="loading"><div className="spinner"></div></div>;
+
+  return (
+    <div style={{ padding: '2rem' }}>
+      <h2 style={{ marginBottom: '2rem' }}>Dashboard Overview</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+          <h3 style={{ color: '#666', fontSize: '1rem', marginBottom: '0.5rem' }}>Total Revenue</h3>
+          <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0 }}>₹{stats.revenue}</p>
+        </div>
+        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+          <h3 style={{ color: '#666', fontSize: '1rem', marginBottom: '0.5rem' }}>Total Cars</h3>
+          <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0 }}>{stats.totalCars}</p>
+        </div>
+        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+          <h3 style={{ color: '#666', fontSize: '1rem', marginBottom: '0.5rem' }}>Total Bookings</h3>
+          <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0 }}>{stats.totalBookings}</p>
+        </div>
+      </div>
+
+      <div style={{ background: 'white', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', height: '400px' }}>
+        <h3 style={{ marginBottom: '1.5rem' }}>Platform Metrics</h3>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip />
+            <Bar dataKey="count" fill="#2c3e50" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
 const AdminDashboard = () => {
   return (
     <div style={{ display: 'flex', minHeight: 'calc(100vh - 70px)' }}>
@@ -445,6 +525,20 @@ const AdminDashboard = () => {
           <h3>Admin Panel</h3>
         </div>
         <nav>
+          <Link
+            to="/admin"
+            style={{
+              display: 'block',
+              padding: '1rem 1.5rem',
+              color: 'white',
+              textDecoration: 'none',
+              borderLeft: '4px solid transparent'
+            }}
+            onMouseEnter={(e) => e.target.style.background = '#34495e'}
+            onMouseLeave={(e) => e.target.style.background = 'transparent'}
+          >
+            📊 Overview
+          </Link>
           <Link
             to="/admin/cars"
             style={{
@@ -489,8 +583,9 @@ const AdminDashboard = () => {
           </Link>
         </nav>
       </aside>
-      <main style={{ flex: 1, background: '#f5f5f5' }}>
+      <main style={{ flex: 1, background: '#f5f5f5', overflowY: 'auto' }}>
         <Routes>
+          <Route path="/" element={<DashboardOverview />} />
           <Route path="cars" element={<ManageCars />} />
           <Route path="cars/add" element={<CarForm />} />
           <Route path="cars/edit/:id" element={<CarForm isEdit={true} />} />
